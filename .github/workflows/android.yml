@@ -19,7 +19,21 @@ jobs:
           mkdir extracted
           unzip -o Street_Racing_Android_Source.zip -d extracted
           PROJECT_DIR=$(dirname "$(find extracted -name settings.gradle -type f | head -n 1)")
+          if [ -z "$PROJECT_DIR" ] || [ ! -f "$PROJECT_DIR/app/build.gradle" ]; then
+            echo "Android app module was not found in the source ZIP."
+            find extracted -maxdepth 5 -type f
+            exit 1
+          fi
           cp -R "$PROJECT_DIR"/. .
+
+      - name: Verify game source files
+        run: |
+          test -s app/build.gradle
+          test -s app/src/main/AndroidManifest.xml
+          test -s app/src/main/assets/index.html
+          test -s app/src/main/java/com/ultimatestreetracing/game/MainActivity.java
+          echo "Game source files are present."
+          wc -c app/src/main/assets/index.html
 
       - name: Set up Java
         uses: actions/setup-java@v4
@@ -39,6 +53,17 @@ jobs:
 
       - name: Build APK
         run: gradle assembleDebug
+
+      - name: Verify APK contents
+        run: |
+          APK=$(find app/build/outputs/apk/debug -name '*.apk' -type f | head -n 1)
+          test -n "$APK"
+          echo "APK size:"
+          du -h "$APK"
+          echo "APK contents:"
+          unzip -Z1 "$APK" | head -n 40
+          unzip -Z1 "$APK" | grep -Fx 'assets/index.html'
+          unzip -Z1 "$APK" | grep -Fx 'classes.dex'
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
