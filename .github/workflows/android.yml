@@ -14,11 +14,21 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Extract Android project
+        run: |
+          mkdir extracted
+          unzip -o Street_Racing_Android_Source.zip -d extracted
+          PROJECT_DIR=$(dirname "$(find extracted -name settings.gradle -type f | head -n 1)")
+          cp -R "$PROJECT_DIR"/. .
+
       - name: Set up Java
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
 
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
